@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# Define usage
+usage() {
+    echo "Usage: artisan <command>"
+    echo "Available commands:"
+    echo "  install_requirements : Install dependencies from requirements.txt"
+    echo "  serve        : Start the Flask development server"
+    echo "  shell            : Open a Python shell with Flask context"
+    echo "  test             : Run unit tests"
+    echo "  lint             : Lint the code"
+    echo "  clean            : Clean up compiled Python files and __pycache__ directories"
+    echo "  make:controller <name> : Create a new controller"
+    echo "  make:model <name>      : Create a new model"
+    echo "  make:view <name>      : Create a new view in templates folder"
+    echo "  generate_secret_key   : Generate Secret Key"
+}
+
+# Define commands
+serve() {
+    flask run --host=0.0.0.0
+}
+
+shell() {
+    python -i shell.py
+}
+
+test() {
+    pytest tests/
+}
+
+lint() {
+    pylint app
+}
+
+clean() {
+    find . -name '*.pyc' -delete
+    find . -type d -name __pycache__ -exec rm -r {} +
+}
+
+make_controller() {
+    if [ -z "$1" ]; then
+        echo "Controller name is missing."
+        exit 1
+    fi
+    touch controllers/$1.py
+    echo "from flask import Blueprint" >> controllers/$1.py
+    echo "$1_blueprint = Blueprint('$1', __name__)" >> controllers/$1.py
+    echo "" >> controllers/$1.py
+    echo "# Define your routes and controller logic here" >> controllers/$1.py
+    echo "" >> controllers/$1.py
+    echo "print('$1 controller created successfully.')"
+}
+
+make_model() {
+    if [ -z "$1" ]; then
+        echo "Model name is missing."
+        exit 1
+    fi
+    touch models/$1.py
+    echo "from database import db" >> models/$1.py
+    echo "" >> models/$1.py
+    echo "class $1(db.Model):" >> models/$1.py
+    echo "    id = db.Column(db.Integer, primary_key=True)" >> models/$1.py
+    echo "    __tablename__ = '$1s'" >> models/$1.py
+    echo "    # Define your model fields here" >> models/$1.py
+    echo "" >> models/$1.py
+    echo "print('$1 model created successfully.')"
+}
+
+make_view() {
+    if [ -z "$1" ]; then
+        echo "View name is missing."
+        exit 1
+    fi
+    touch templates/$1.html
+    echo "{% extends 'base.html' %}" >> templates/$1.html
+    echo "{% block content %}" >> templates/$1.html
+    echo "<h1>$1 View</h1>" >> templates/$1.html
+    echo "{% endblock %}" >> templates/$1.html
+    echo "print('$1 view created successfully.')"
+}
+
+migrate() {
+    python -c "from app import db; db.create_all()"
+    echo "All tables created successfully."
+}
+
+install_requirements() {
+    pip install -r requirements.txt
+    echo "Requirements installed successfully."
+}
+
+generate_secret_key() {
+    SECRET_KEY=$(openssl rand -hex 24)
+    if grep -qF "SECRET_KEY=" .env; then
+        awk -i inplace -v secret_key="$SECRET_KEY" '/SECRET_KEY=/ {sub(/SECRET_KEY=.*/, "SECRET_KEY=" secret_key)} 1' .env
+    else
+        echo "SECRET_KEY=$SECRET_KEY" >> .env
+    fi
+    echo "Secret key generated and saved to .env file."
+}
+
+# Parse command
+case "$1" in
+    serve)
+        serve
+        ;;
+    shell)
+        shell
+        ;;
+    test)
+        test
+        ;;
+    lint)
+        lint
+        ;;
+    clean)
+        clean
+        ;;
+    migrate)
+        migrate
+        ;;
+    make:controller)
+        make_controller "${@:2}"
+        ;;
+    make:model)
+        make_model "${@:2}"
+        ;;
+    make:view)
+        make_view "${@:2}"
+        ;;
+    install_requirements)
+        install_requirements
+        ;;
+    generate_secret_key)
+        generate_secret_key
+        ;;
+    *)
+
+        usage
+        exit 1
+        ;;
+esac
