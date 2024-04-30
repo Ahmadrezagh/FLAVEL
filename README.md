@@ -20,7 +20,7 @@ FLAVEL is a Flask application with minimal ideas borrowed from Laravel, combinin
 
 To get started with FLAVEL, follow these steps:
 
-1. Clone this repository.
+1. Clone this repository `git clone git@github.com:Ahmadrezagh/FLAVEL.git`.
 2. Install dependencies by running `artisan install_requirements`.
 3. Generate a secret key by running `artisan generate_secret_key`.
 4. Start the development server using `artisan serve`.
